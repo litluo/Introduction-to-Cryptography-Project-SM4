@@ -1,3 +1,4 @@
+import os
 from .sm4_core import key_expansion, encrypt_block
 
 
@@ -70,3 +71,48 @@ def ctr_decrypt(key: bytes, nonce: bytes, data: bytes) -> bytes:
         明文
     """
     return ctr_encrypt(key, nonce, data)
+
+
+def encrypt_file(input_path: str, output_path: str, key: bytes, nonce: bytes, chunk_size: int = 1024*1024) -> None:
+    """
+    加密文件
+    
+    Args:
+        input_path: 输入文件路径
+        output_path: 输出文件路径
+        key: 16字节密钥
+        nonce: 8字节nonce
+        chunk_size: 分块大小（默认1MB）
+    """
+    if len(key) != 16:
+        raise ValueError("密钥长度必须为16字节")
+    if len(nonce) != 8:
+        raise ValueError("nonce长度必须为8字节")
+    
+    rk = key_expansion(key)
+    
+    with open(input_path, 'rb') as f_in, open(output_path, 'wb') as f_out:
+        while True:
+            chunk = f_in.read(chunk_size)
+            if not chunk:
+                break
+            
+            keystream = generate_keystream(key, nonce, len(chunk))
+            
+            encrypted_chunk = bytes(a ^ b for a, b in zip(chunk, keystream))
+            
+            f_out.write(encrypted_chunk)
+
+
+def decrypt_file(input_path: str, output_path: str, key: bytes, nonce: bytes, chunk_size: int = 1024*1024) -> None:
+    """
+    解密文件（与加密完全相同）
+    
+    Args:
+        input_path: 输入文件路径
+        output_path: 输出文件路径
+        key: 16字节密钥
+        nonce: 8字节nonce
+        chunk_size: 分块大小（默认1MB）
+    """
+    encrypt_file(input_path, output_path, key, nonce, chunk_size)

@@ -1,4 +1,4 @@
-from .constants import SBOX
+from .constants import SBOX, FK, CK
 
 
 def sbox_transform(data: int) -> int:
@@ -118,3 +118,37 @@ def t_prime_transform(data: int) -> int:
     transformed = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
 
     return l_prime_transform(transformed)
+
+
+def bytes_to_int(data: bytes) -> int:
+    return int.from_bytes(data, byteorder='big')
+
+
+def int_to_bytes(data: int, length: int = 4) -> bytes:
+    return data.to_bytes(length, byteorder='big')
+
+
+def key_expansion(key: bytes) -> list:
+    if len(key) != 16:
+        raise ValueError("密钥长度必须为16字节")
+
+    MK = [
+        bytes_to_int(key[0:4]),
+        bytes_to_int(key[4:8]),
+        bytes_to_int(key[8:12]),
+        bytes_to_int(key[12:16])
+    ]
+
+    K = [
+        MK[0] ^ FK[0],
+        MK[1] ^ FK[1],
+        MK[2] ^ FK[2],
+        MK[3] ^ FK[3]
+    ]
+
+    rk = []
+    for i in range(32):
+        rk.append(K[i] ^ t_prime_transform(K[i+1] ^ K[i+2] ^ K[i+3] ^ CK[i]))
+        K.append(rk[-1])
+
+    return rk

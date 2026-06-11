@@ -152,3 +152,100 @@ def key_expansion(key: bytes) -> list:
         K.append(rk[-1])
 
     return rk
+
+
+def round_function(x0: int, x1: int, x2: int, x3: int, rk: int) -> int:
+    """
+    轮函数F
+
+    F(X0,X1,X2,X3,rk) = X0 ⊕ T(X1⊕X2⊕X3⊕rk)
+
+    Args:
+        x0, x1, x2, x3: 4个32位整数
+        rk: 轮密钥
+
+    Returns:
+        轮函数输出
+    """
+    return x0 ^ t_transform(x1 ^ x2 ^ x3 ^ rk)
+
+
+def encrypt_block(plaintext: bytes, key: bytes) -> bytes:
+    """
+    加密单个16字节分组
+
+    Args:
+        plaintext: 16字节明文
+        key: 16字节密钥
+
+    Returns:
+        16字节密文
+
+    Raises:
+        ValueError: 明文或密钥长度不是16字节
+    """
+    if len(plaintext) != 16:
+        raise ValueError("明文长度必须为16字节")
+    if len(key) != 16:
+        raise ValueError("密钥长度必须为16字节")
+
+    rk = key_expansion(key)
+
+    X = [
+        bytes_to_int(plaintext[0:4]),
+        bytes_to_int(plaintext[4:8]),
+        bytes_to_int(plaintext[8:12]),
+        bytes_to_int(plaintext[12:16])
+    ]
+
+    for i in range(32):
+        X.append(round_function(X[i], X[i+1], X[i+2], X[i+3], rk[i]))
+
+    Y = [X[35], X[34], X[33], X[32]]
+
+    ciphertext = b''
+    for y in Y:
+        ciphertext += int_to_bytes(y)
+
+    return ciphertext
+
+
+def decrypt_block(ciphertext: bytes, key: bytes) -> bytes:
+    """
+    解密单个16字节分组
+
+    Args:
+        ciphertext: 16字节密文
+        key: 16字节密钥
+
+    Returns:
+        16字节明文
+
+    Raises:
+        ValueError: 密文或密钥长度不是16字节
+    """
+    if len(ciphertext) != 16:
+        raise ValueError("密文长度必须为16字节")
+    if len(key) != 16:
+        raise ValueError("密钥长度必须为16字节")
+
+    rk = key_expansion(key)
+    rk.reverse()
+
+    X = [
+        bytes_to_int(ciphertext[0:4]),
+        bytes_to_int(ciphertext[4:8]),
+        bytes_to_int(ciphertext[8:12]),
+        bytes_to_int(ciphertext[12:16])
+    ]
+
+    for i in range(32):
+        X.append(round_function(X[i], X[i+1], X[i+2], X[i+3], rk[i]))
+
+    Y = [X[35], X[34], X[33], X[32]]
+
+    plaintext = b''
+    for y in Y:
+        plaintext += int_to_bytes(y)
+
+    return plaintext

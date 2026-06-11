@@ -192,3 +192,32 @@ class TestEncryptDecrypt:
         key = bytes.fromhex("0123456789abcdeffedcba9876543210")
         with pytest.raises(ValueError, match="密文长度必须为16字节"):
             decrypt_block(b"short", key)
+
+    def test_different_keys(self):
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        key1 = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        key2 = bytes.fromhex("fedcba98765432100123456789abcdef")
+        ciphertext1 = encrypt_block(plaintext, key1)
+        ciphertext2 = encrypt_block(plaintext, key2)
+        assert ciphertext1 != ciphertext2
+
+    def test_different_plaintexts(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext1 = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext2 = bytes.fromhex("fedcba98765432100123456789abcdef")
+        ciphertext1 = encrypt_block(plaintext1, key)
+        ciphertext2 = encrypt_block(plaintext2, key)
+        assert ciphertext1 != ciphertext2
+
+    def test_multiple_blocks(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintexts = [
+            bytes.fromhex("0123456789abcdeffedcba9876543210"),
+            bytes.fromhex("fedcba98765432100123456789abcdef"),
+            bytes.fromhex("00000000000000000000000000000000"),
+            bytes.fromhex("ffffffffffffffffffffffffffffffff"),
+        ]
+        for plaintext in plaintexts:
+            ciphertext = encrypt_block(plaintext, key)
+            decrypted = decrypt_block(ciphertext, key)
+            assert decrypted == plaintext

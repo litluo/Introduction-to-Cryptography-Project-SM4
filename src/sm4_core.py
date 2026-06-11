@@ -64,3 +64,57 @@ def l_prime_transform(data: int) -> int:
     return (data ^ 
             circular_left_shift(data, 13) ^ 
             circular_left_shift(data, 23))
+
+
+def t_transform(data: int) -> int:
+    """
+    复合变换T = L ∘ τ
+    
+    先进行S盒变换（τ），再进行线性变换L
+    
+    Args:
+        data: 32位整数
+    
+    Returns:
+        经过复合变换T后的32位整数
+    """
+    b0 = (data >> 24) & 0xff
+    b1 = (data >> 16) & 0xff
+    b2 = (data >> 8) & 0xff
+    b3 = data & 0xff
+
+    b0 = sbox_transform(b0)
+    b1 = sbox_transform(b1)
+    b2 = sbox_transform(b2)
+    b3 = sbox_transform(b3)
+
+    transformed = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+
+    return l_transform(transformed)
+
+
+def t_prime_transform(data: int) -> int:
+    """
+    密钥扩展中的复合变换T' = L' ∘ τ
+    
+    先进行S盒变换（τ），再进行线性变换L'
+    
+    Args:
+        data: 32位整数
+    
+    Returns:
+        经过复合变换T'后的32位整数
+    """
+    b0 = (data >> 24) & 0xff
+    b1 = (data >> 16) & 0xff
+    b2 = (data >> 8) & 0xff
+    b3 = data & 0xff
+
+    b0 = sbox_transform(b0)
+    b1 = sbox_transform(b1)
+    b2 = sbox_transform(b2)
+    b3 = sbox_transform(b3)
+
+    transformed = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
+
+    return l_prime_transform(transformed)

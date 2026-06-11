@@ -6,6 +6,9 @@ from src.sm4_core import (
     l_prime_transform,
     t_transform,
     t_prime_transform,
+    encrypt_block,
+    decrypt_block,
+    key_expansion,
 )
 
 
@@ -125,3 +128,67 @@ class TestTPrimeTransform:
     def test_t_and_t_prime_differ(self):
         data = 0x01234567
         assert t_transform(data) != t_prime_transform(data)
+
+
+class TestKeyExpansion:
+    def test_key_expansion_generates_32_round_keys(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        rk = key_expansion(key)
+        assert len(rk) == 32
+
+    def test_key_expansion_round_keys_are_32bit(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        rk = key_expansion(key)
+        for r in rk:
+            assert 0 <= r < (1 << 32)
+
+    def test_key_expansion_invalid_length(self):
+        with pytest.raises(ValueError, match="密钥长度必须为16字节"):
+            key_expansion(b"short_key")
+
+    def test_key_expansion_deterministic(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        assert key_expansion(key) == key_expansion(key)
+
+
+class TestEncryptDecrypt:
+    def test_official_test_vector(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        expected_ciphertext = bytes.fromhex("681edf34d206965e86b3e94f536e4246")
+        ciphertext = encrypt_block(plaintext, key)
+        assert ciphertext == expected_ciphertext
+
+    def test_official_test_vector_decrypt(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        ciphertext = bytes.fromhex("681edf34d206965e86b3e94f536e4246")
+        expected_plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = decrypt_block(ciphertext, key)
+        assert plaintext == expected_plaintext
+
+    def test_encrypt_decrypt_consistency(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        ciphertext = encrypt_block(plaintext, key)
+        decrypted = decrypt_block(ciphertext, key)
+        assert decrypted == plaintext
+
+    def test_invalid_key_length_encrypt(self):
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        with pytest.raises(ValueError, match="密钥长度必须为16字节"):
+            encrypt_block(plaintext, b"short_key")
+
+    def test_invalid_key_length_decrypt(self):
+        ciphertext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        with pytest.raises(ValueError, match="密钥长度必须为16字节"):
+            decrypt_block(ciphertext, b"short_key")
+
+    def test_invalid_plaintext_length(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        with pytest.raises(ValueError, match="明文长度必须为16字节"):
+            encrypt_block(b"short", key)
+
+    def test_invalid_ciphertext_length(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        with pytest.raises(ValueError, match="密文长度必须为16字节"):
+            decrypt_block(b"short", key)

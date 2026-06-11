@@ -33,3 +33,40 @@ def generate_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
         counter += 1
 
     return keystream[:length]
+
+
+def ctr_encrypt(key: bytes, nonce: bytes, data: bytes) -> bytes:
+    """
+    CTR模式加密
+
+    Args:
+        key: 16字节密钥
+        nonce: 8字节nonce
+        data: 待加密数据
+
+    Returns:
+        密文
+    """
+    if not data:
+        return b''
+
+    keystream = generate_keystream(key, nonce, len(data))
+
+    ciphertext = bytes(a ^ b for a, b in zip(data, keystream))
+
+    return ciphertext
+
+
+def ctr_decrypt(key: bytes, nonce: bytes, data: bytes) -> bytes:
+    """
+    CTR模式解密（与加密完全相同）
+
+    Args:
+        key: 16字节密钥
+        nonce: 8字节nonce
+        data: 密文
+
+    Returns:
+        明文
+    """
+    return ctr_encrypt(key, nonce, data)

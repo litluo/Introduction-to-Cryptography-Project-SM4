@@ -1,0 +1,35 @@
+from .sm4_core import key_expansion, encrypt_block
+
+
+def generate_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
+    """
+    生成CTR模式密钥流
+
+    Args:
+        key: 16字节密钥
+        nonce: 8字节nonce
+        length: 需要的密钥流长度（字节）
+
+    Returns:
+        密钥流字节序列
+
+    Raises:
+        ValueError: 密钥或nonce长度不正确
+    """
+    if len(key) != 16:
+        raise ValueError("密钥长度必须为16字节")
+    if len(nonce) != 8:
+        raise ValueError("nonce长度必须为8字节")
+
+    rk = key_expansion(key)
+
+    keystream = b''
+    counter = 0
+
+    while len(keystream) < length:
+        counter_block = nonce + counter.to_bytes(8, byteorder='big')
+        encrypted_block = encrypt_block(counter_block, rk=rk)
+        keystream += encrypted_block
+        counter += 1
+
+    return keystream[:length]

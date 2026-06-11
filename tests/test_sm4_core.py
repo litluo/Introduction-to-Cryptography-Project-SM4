@@ -221,3 +221,38 @@ class TestEncryptDecrypt:
             ciphertext = encrypt_block(plaintext, key)
             decrypted = decrypt_block(ciphertext, key)
             assert decrypted == plaintext
+
+    def test_encrypt_with_precomputed_rk(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        expected_ciphertext = bytes.fromhex("681edf34d206965e86b3e94f536e4246")
+
+        rk = key_expansion(key)
+        ciphertext = encrypt_block(plaintext, rk=rk)
+        assert ciphertext == expected_ciphertext
+
+    def test_decrypt_with_precomputed_rk(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        ciphertext = bytes.fromhex("681edf34d206965e86b3e94f536e4246")
+        expected_plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+
+        rk = key_expansion(key)
+        rk_reversed = list(reversed(rk))
+        plaintext = decrypt_block(ciphertext, rk=rk_reversed)
+        assert plaintext == expected_plaintext
+
+    def test_encrypt_decrypt_with_precomputed_rk_consistency(self):
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+
+        rk = key_expansion(key)
+        rk_reversed = list(reversed(rk))
+
+        ciphertext = encrypt_block(plaintext, rk=rk)
+        decrypted = decrypt_block(ciphertext, rk=rk_reversed)
+        assert decrypted == plaintext
+
+    def test_no_key_no_rk_raises_error(self):
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        with pytest.raises(ValueError, match="必须提供key或rk之一"):
+            encrypt_block(plaintext)

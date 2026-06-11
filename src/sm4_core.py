@@ -170,26 +170,30 @@ def round_function(x0: int, x1: int, x2: int, x3: int, rk: int) -> int:
     return x0 ^ t_transform(x1 ^ x2 ^ x3 ^ rk)
 
 
-def encrypt_block(plaintext: bytes, key: bytes) -> bytes:
+def encrypt_block(plaintext: bytes, key: bytes = None, rk: list = None) -> bytes:
     """
     加密单个16字节分组
 
     Args:
         plaintext: 16字节明文
-        key: 16字节密钥
+        key: 16字节密钥（与rk二选一）
+        rk: 预计算的轮密钥（与key二选一，优先使用rk）
 
     Returns:
         16字节密文
 
     Raises:
-        ValueError: 明文或密钥长度不是16字节
+        ValueError: 明文长度不是16字节，或key和rk都未提供
     """
     if len(plaintext) != 16:
         raise ValueError("明文长度必须为16字节")
-    if len(key) != 16:
-        raise ValueError("密钥长度必须为16字节")
 
-    rk = key_expansion(key)
+    if rk is None:
+        if key is None:
+            raise ValueError("必须提供key或rk之一")
+        if len(key) != 16:
+            raise ValueError("密钥长度必须为16字节")
+        rk = key_expansion(key)
 
     X = [
         bytes_to_int(plaintext[0:4]),
@@ -210,27 +214,31 @@ def encrypt_block(plaintext: bytes, key: bytes) -> bytes:
     return ciphertext
 
 
-def decrypt_block(ciphertext: bytes, key: bytes) -> bytes:
+def decrypt_block(ciphertext: bytes, key: bytes = None, rk: list = None) -> bytes:
     """
     解密单个16字节分组
 
     Args:
         ciphertext: 16字节密文
-        key: 16字节密钥
+        key: 16字节密钥（与rk二选一）
+        rk: 预计算的轮密钥（与key二选一，优先使用rk）
 
     Returns:
         16字节明文
 
     Raises:
-        ValueError: 密文或密钥长度不是16字节
+        ValueError: 密文长度不是16字节，或key和rk都未提供
     """
     if len(ciphertext) != 16:
         raise ValueError("密文长度必须为16字节")
-    if len(key) != 16:
-        raise ValueError("密钥长度必须为16字节")
 
-    rk = key_expansion(key)
-    rk.reverse()
+    if rk is None:
+        if key is None:
+            raise ValueError("必须提供key或rk之一")
+        if len(key) != 16:
+            raise ValueError("密钥长度必须为16字节")
+        rk = key_expansion(key)
+        rk.reverse()
 
     X = [
         bytes_to_int(ciphertext[0:4]),

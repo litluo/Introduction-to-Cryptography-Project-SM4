@@ -2,7 +2,7 @@ import os
 from .sm4_core import key_expansion, encrypt_block
 
 
-def generate_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
+def generate_keystream(key: bytes, nonce: bytes, length: int, counter_offset: int = 0) -> bytes:
     """
     生成CTR模式密钥流
 
@@ -10,6 +10,7 @@ def generate_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
         key: 16字节密钥
         nonce: 8字节nonce
         length: 需要的密钥流长度（字节）
+        counter_offset: 计数器起始偏移量（默认0）
 
     Returns:
         密钥流字节序列
@@ -25,7 +26,7 @@ def generate_keystream(key: bytes, nonce: bytes, length: int) -> bytes:
     rk = key_expansion(key)
 
     keystream = b''
-    counter = 0
+    counter = counter_offset
 
     while len(keystream) < length:
         counter_block = nonce + counter.to_bytes(8, byteorder='big')
@@ -89,19 +90,30 @@ def encrypt_file(input_path: str, output_path: str, key: bytes, nonce: bytes, ch
     if len(nonce) != 8:
         raise ValueError("nonce长度必须为8字节")
     
+    # 预计算轮密钥
     rk = key_expansion(key)
     
     with open(input_path, 'rb') as f_in, open(output_path, 'wb') as f_out:
+        counter = 0
+        
         while True:
             chunk = f_in.read(chunk_size)
             if not chunk:
                 break
             
-            keystream = generate_keystream(key, nonce, len(chunk))
+            # 生成密钥流，使用正确的计数器偏移量
+            keystream = generate_keystream(key, nonce, len(chunk), counter_offset=counter)
             
+            # 异或加密
             encrypted_chunk = bytes(a ^ b for a, b in zip(chunk, keystream))
             
+            # 写入输出文件
             f_out.write(encrypted_chunk)
+            
+            # 更新计数器（每个16字节块一个计数器值）
+            counter += len(chunk) // 16
+            if len(chunk) % 16 != 0:
+                counter += 1
 
 
 def decrypt_file(input_path: str, output_path: str, key: bytes, nonce: bytes, chunk_size: int = 1024*1024) -> None:

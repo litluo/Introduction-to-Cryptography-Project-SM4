@@ -94,3 +94,30 @@ class TestFileEncryptDecrypt:
                 os.unlink(encrypted_path)
             if os.path.exists(decrypted_path):
                 os.unlink(decrypted_path)
+
+    def test_large_file_encrypt_decrypt(self):
+        """测试大文件加密解密（多个分块）"""
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        nonce = bytes.fromhex("0123456789abcdef")
+        # 创建大于1MB的数据，确保多个分块
+        data = os.urandom(2 * 1024 * 1024 + 37)  # > 1MB, non-aligned
+        
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            input_path = f.name
+            f.write(data)
+        
+        try:
+            encrypted_path = input_path + ".enc"
+            encrypt_file(input_path, encrypted_path, key, nonce, chunk_size=1024*1024)
+            
+            decrypted_path = input_path + ".dec"
+            decrypt_file(encrypted_path, decrypted_path, key, nonce, chunk_size=1024*1024)
+            
+            with open(decrypted_path, 'rb') as f:
+                decrypted_data = f.read()
+            
+            assert decrypted_data == data
+        finally:
+            for p in [input_path, encrypted_path, decrypted_path]:
+                if os.path.exists(p):
+                    os.unlink(p)

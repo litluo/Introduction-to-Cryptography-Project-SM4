@@ -111,3 +111,53 @@ class TestVaultManager:
         with open(export_path, 'r') as f:
             content = f.read()
         assert content == "Hello, World!"
+
+    def test_change_password_multiple_files(self):
+        """测试密码修改（多个文件）"""
+        vault = VaultManager(self.vault_path)
+        vault.initialize("old_password")
+
+        # 创建多个测试文件
+        test_file1 = os.path.join(self.test_dir, "test1.txt")
+        with open(test_file1, 'w') as f:
+            f.write("File 1 content")
+
+        test_file2 = os.path.join(self.test_dir, "test2.txt")
+        with open(test_file2, 'w') as f:
+            f.write("File 2 content")
+
+        test_file3 = os.path.join(self.test_dir, "test3.txt")
+        with open(test_file3, 'w') as f:
+            f.write("File 3 content")
+
+        # 导入所有文件
+        vault.import_file(test_file1)
+        vault.import_file(test_file2)
+        vault.import_file(test_file3)
+
+        # 修改密码
+        vault.change_password("old_password", "new_password")
+
+        # 使用新密码解锁
+        vault2 = VaultManager(self.vault_path)
+        result = vault2.unlock("new_password")
+        assert result is True
+
+        # 验证所有文件仍然可访问
+        files = vault2.list_files()
+        assert len(files) == 3
+
+        # 导出并验证每个文件的内容
+        for file_entry in files:
+            export_path = os.path.join(self.test_dir, f"exported_{file_entry['original_name']}")
+            vault2.export_file(file_entry["id"], export_path)
+
+            with open(export_path, 'r') as f:
+                content = f.read()
+
+            if file_entry["original_name"] == "test1.txt":
+                assert content == "File 1 content"
+            elif file_entry["original_name"] == "test2.txt":
+                assert content == "File 2 content"
+            elif file_entry["original_name"] == "test3.txt":
+                assert content == "File 3 content"

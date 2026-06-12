@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import base64
+import hashlib
 from datetime import datetime
 
 from .crypto_utils import pbkdf2_hmac_sha256, generate_salt, generate_key, generate_nonce, secure_delete_file
@@ -81,6 +82,9 @@ class VaultManager:
         new_master_key = pbkdf2_hmac_sha256(new_password, new_salt)
         new_verification = pbkdf2_hmac_sha256(new_password, new_salt, iterations=1)
         
+        # 保存旧MK
+        old_master_key = self.master_key
+        
         # 重新加密所有FEK
         for i, entry in enumerate(self.index["files"]):
             # 使用旧MK解密FEK
@@ -93,6 +97,9 @@ class VaultManager:
             
             # 更新索引
             self.index["files"][i]["encrypted_fek"] = base64.b64encode(new_encrypted_fek).decode('utf-8')
+            
+            # 恢复旧MK用于下次迭代
+            self.master_key = old_master_key
         
         # 更新索引
         self.index["master_salt"] = base64.b64encode(new_salt).decode('utf-8')
@@ -148,7 +155,6 @@ class VaultManager:
         
         encrypted_fek = self._encrypt_fek(fek)
         
-        import hashlib
         with open(file_path, 'rb') as f:
             checksum = hashlib.sha256(f.read()).hexdigest()
         

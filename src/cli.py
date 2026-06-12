@@ -121,3 +121,83 @@ class SM4VaultCLI:
                 return f"{size:.2f} {unit}"
             size /= 1024
         return f"{size:.2f} TB"
+
+    def import_file(self):
+        """导入文件"""
+        file_path = Prompt.ask("请输入要导入的文件路径")
+
+        if not os.path.exists(file_path):
+            self.console.print("[red]文件不存在[/red]")
+            return
+
+        secure_delete = Confirm.ask("是否安全删除原文件？", default=False)
+
+        try:
+            self.vault.import_file(file_path, secure_delete)
+            self.console.print("[green]文件导入成功[/green]")
+        except Exception as e:
+            self.console.print(f"[red]导入失败: {e}[/red]")
+
+    def export_file(self):
+        """导出文件"""
+        files = self.vault.list_files()
+
+        if not files:
+            self.console.print("[yellow]文件库为空[/yellow]")
+            return
+
+        self.display_files(files)
+
+        file_id = Prompt.ask("请输入要导出的文件ID")
+        output_path = Prompt.ask("请输入导出路径")
+
+        try:
+            self.vault.export_file(file_id, output_path)
+            self.console.print("[green]文件导出成功[/green]")
+        except Exception as e:
+            self.console.print(f"[red]导出失败: {e}[/red]")
+
+    def list_files(self):
+        """查看文件列表"""
+        files = self.vault.list_files()
+
+        if not files:
+            self.console.print("[yellow]文件库为空[/yellow]")
+            return
+
+        self.display_files(files)
+
+    def delete_file(self):
+        """删除文件"""
+        files = self.vault.list_files()
+
+        if not files:
+            self.console.print("[yellow]文件库为空[/yellow]")
+            return
+
+        self.display_files(files)
+
+        file_id = Prompt.ask("请输入要删除的文件ID")
+        secure_delete = Confirm.ask("是否安全删除？", default=False)
+
+        try:
+            self.vault.delete_file(file_id, secure_delete)
+            self.console.print("[green]文件删除成功[/green]")
+        except Exception as e:
+            self.console.print(f"[red]删除失败: {e}[/red]")
+
+    def change_password(self):
+        """修改密码"""
+        old_password = Prompt.ask("请输入旧密码", password=True)
+        new_password = Prompt.ask("请输入新密码", password=True)
+        confirm_password = Prompt.ask("请确认新密码", password=True)
+
+        if new_password != confirm_password:
+            self.console.print("[red]新密码不匹配[/red]")
+            return
+
+        try:
+            self.vault.change_password(old_password, new_password)
+            self.console.print("[green]密码修改成功[/green]")
+        except Exception as e:
+            self.console.print(f"[red]密码修改失败: {e}[/red]")

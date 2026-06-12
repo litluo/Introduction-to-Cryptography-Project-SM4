@@ -201,3 +201,51 @@ class SM4VaultCLI:
             self.console.print("[green]密码修改成功[/green]")
         except Exception as e:
             self.console.print(f"[red]密码修改失败: {e}[/red]")
+
+    def performance_test(self):
+        """性能测试"""
+        self.console.print("\n[bold blue]性能测试[/bold blue]")
+
+        test_sizes = [1024, 10*1024, 100*1024, 1024*1024]
+
+        key = bytes.fromhex("0123456789abcdeffedcba9876543210")
+        plaintext = bytes.fromhex("0123456789abcdeffedcba9876543210")
+
+        table = Table(title="加密性能测试结果")
+        table.add_column("数据大小", style="cyan")
+        table.add_column("加密次数", style="green")
+        table.add_column("总耗时", style="magenta")
+        table.add_column("平均耗时", style="yellow")
+        table.add_column("加密速度", style="blue")
+
+        for size in test_sizes:
+            blocks = size // 16
+            if size % 16 != 0:
+                blocks += 1
+
+            for _ in range(10):
+                encrypt_block(plaintext, key)
+
+            iterations = 1000
+            start_time = time.time()
+
+            for _ in range(iterations):
+                for _ in range(blocks):
+                    encrypt_block(plaintext, key)
+
+            end_time = time.time()
+            elapsed = end_time - start_time
+
+            total_blocks = iterations * blocks
+            avg_time = elapsed / total_blocks * 1000
+            speed = total_blocks / elapsed
+
+            table.add_row(
+                self.format_size(size),
+                str(total_blocks),
+                f"{elapsed:.3f}秒",
+                f"{avg_time:.3f}毫秒",
+                f"{speed:.0f}块/秒"
+            )
+
+        self.console.print(table)

@@ -63,6 +63,45 @@ class VaultManager:
         
         return True
     
+    def change_password(self, old_password: str, new_password: str):
+        """修改主密码（无需重新加密文件）"""
+        if self.master_key is None:
+            raise ValueError("文件库未解锁")
+        
+        # 验证旧密码
+        salt = base64.b64decode(self.index["master_salt"])
+        old_verification = pbkdf2_hmac_sha256(old_password, salt, iterations=1)
+        stored_hash = base64.b64decode(self.index["verification_hash"])
+        
+        if old_verification != stored_hash:
+            raise ValueError("旧密码错误")
+        
+        # 生成新salt和新MK
+        new_salt = generate_salt()
+        new_master_key = pbkdf2_hmac_sha256(new_password, new_salt)
+        new_verification = pbkdf2_hmac_sha256(new_password, new_salt, iterations=1)
+        
+        # 重新加密所有FEK
+        for i, entry in enumerate(self.index["files"]):
+            # 使用旧MK解密FEK
+            encrypted_fek_with_nonce = base64.b64decode(entry["encrypted_fek"])
+            fek = self._decrypt_fek(encrypted_fek_with_nonce)
+            
+            # 使用新MK加密FEK
+            self.master_key = new_master_key
+            new_encrypted_fek = self._encrypt_fek(fek)
+            
+            # 更新索引
+            self.index["files"][i]["encrypted_fek"] = base64.b64encode(new_encrypted_fek).decode('utf-8')
+        
+        # 更新索引
+        self.index["master_salt"] = base64.b64encode(new_salt).decode('utf-8')
+        self.index["verification_hash"] = base64.b64encode(new_verification).decode('utf-8')
+        self.master_key = new_master_key
+        
+        # 保存索引
+        self._save_index()
+    
     def _load_index(self):
         """加载索引文件"""
         if not os.path.exists(self.index_path):

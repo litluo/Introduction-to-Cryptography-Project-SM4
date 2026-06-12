@@ -36,6 +36,11 @@ class SM4VaultCLI:
         """初始化新文件库"""
         vault_path = Prompt.ask("请输入文件库路径")
         password = Prompt.ask("请输入主密码", password=True)
+        
+        if not password:
+            self.console.print("[red]密码不能为空[/red]")
+            return
+        
         confirm_password = Prompt.ask("请确认主密码", password=True)
 
         if password != confirm_password:
@@ -190,6 +195,11 @@ class SM4VaultCLI:
         """修改密码"""
         old_password = Prompt.ask("请输入旧密码", password=True)
         new_password = Prompt.ask("请输入新密码", password=True)
+        
+        if not new_password:
+            self.console.print("[red]新密码不能为空[/red]")
+            return
+        
         confirm_password = Prompt.ask("请确认新密码", password=True)
 
         if new_password != confirm_password:
@@ -249,3 +259,8 @@ class SM4VaultCLI:
             )
 
         self.console.print(table)
+
+
+if __name__ == "__main__":
+    cli = SM4VaultCLI()
+    cli.run()

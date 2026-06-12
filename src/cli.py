@@ -156,6 +156,18 @@ class SM4VaultCLI:
         file_id = Prompt.ask("请输入要导出的文件ID")
         output_path = Prompt.ask("请输入导出路径")
 
+        # 如果输出路径是目录，自动附加原始文件名
+        if os.path.isdir(output_path):
+            # 查找原始文件名
+            original_name = None
+            for file in files:
+                if file["id"] == file_id:
+                    original_name = file["original_name"]
+                    break
+            
+            if original_name:
+                output_path = os.path.join(output_path, original_name)
+
         try:
             self.vault.export_file(file_id, output_path)
             self.console.print("[green]文件导出成功[/green]")

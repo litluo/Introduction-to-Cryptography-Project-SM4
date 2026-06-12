@@ -10,9 +10,27 @@
 - 支持CTR工作模式，可加密任意长度数据
 - 支持文件加密解密
 - 支持保密文件库管理
+- 支持命令行界面
 - 通过官方测试向量验证
 
 ## 使用方法
+
+### 命令行界面
+
+```bash
+# 启动CLI
+python -m src.cli
+```
+
+CLI功能：
+1. 初始化新文件库
+2. 打开现有文件库
+3. 导入文件
+4. 导出文件
+5. 查看文件列表
+6. 删除文件
+7. 修改密码
+8. 性能测试
 
 ### 基础加解密
 
@@ -104,11 +122,13 @@ src/
 ├── sm4_cipher.py        # CTR工作模式实现
 ├── crypto_utils.py      # 密码学工具函数
 ├── vault_manager.py     # 文件库管理核心
+├── cli.py               # 命令行界面
 tests/
 ├── __init__.py          # Python包初始化
 ├── test_sm4_core.py     # 核心算法测试
 ├── test_sm4_cipher.py   # CTR模式测试
 ├── test_crypto_utils.py # 工具函数测试
 ├── test_vault.py        # 文件库功能测试
+├── test_cli.py          # CLI测试
 └── test_performance.py  # 性能测试
 ```

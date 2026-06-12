@@ -1,6 +1,6 @@
 # SM4核心算法实现
 
-国密SM4分组密码算法的Python实现，包含CTR工作模式。
+国密SM4分组密码算法的Python实现，包含CTR工作模式和保密文件库管理。
 
 ## 功能特性
 
@@ -9,6 +9,7 @@
 - 包含完整的加解密功能
 - 支持CTR工作模式，可加密任意长度数据
 - 支持文件加密解密
+- 支持保密文件库管理
 - 通过官方测试向量验证
 
 ## 使用方法
@@ -60,6 +61,29 @@ encrypt_file("input.txt", "encrypted.bin", key, nonce)
 decrypt_file("encrypted.bin", "decrypted.txt", key, nonce)
 ```
 
+### 保密文件库管理
+
+```python
+from src.vault_manager import VaultManager
+
+# 初始化文件库
+vault = VaultManager("./my_vault")
+vault.initialize("my_password")
+
+# 导入文件
+vault.import_file("secret.txt")
+
+# 列出文件
+files = vault.list_files()
+print(files)
+
+# 导出文件
+vault.export_file(files[0]["id"], "exported.txt")
+
+# 修改密码
+vault.change_password("my_password", "new_password")
+```
+
 ## 运行测试
 
 ```bash
@@ -78,9 +102,13 @@ src/
 ├── constants.py         # SM4常量定义
 ├── sm4_core.py          # SM4核心算法实现
 ├── sm4_cipher.py        # CTR工作模式实现
+├── crypto_utils.py      # 密码学工具函数
+├── vault_manager.py     # 文件库管理核心
 tests/
 ├── __init__.py          # Python包初始化
 ├── test_sm4_core.py     # 核心算法测试
 ├── test_sm4_cipher.py   # CTR模式测试
+├── test_crypto_utils.py # 工具函数测试
+├── test_vault.py        # 文件库功能测试
 └── test_performance.py  # 性能测试
 ```
